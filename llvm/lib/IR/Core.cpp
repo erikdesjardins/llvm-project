@@ -218,6 +218,10 @@ LLVMBool LLVMIsTypeAttribute(LLVMAttributeRef A) {
   return unwrap(A).isTypeAttribute();
 }
 
+LLVMBool LLVMIsMetadataAttribute(LLVMAttributeRef A) {
+  return unwrap(A).isMetadataAttribute();
+}
+
 char *LLVMGetDiagInfoDescription(LLVMDiagnosticInfoRef DI) {
   std::string MsgStorage;
   raw_string_ostream Stream(MsgStorage);

@@ -735,6 +735,8 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_OPTIMIZE_FOR_SIZE;
   case Attribute::OptimizeNone:
     return bitc::ATTR_KIND_OPTIMIZE_NONE;
+  case Attribute::Range:
+    return bitc::ATTR_KIND_RANGE;
   case Attribute::ReadNone:
     return bitc::ATTR_KIND_READ_NONE;
   case Attribute::ReadOnly:
@@ -848,13 +850,20 @@ void ModuleBitcodeWriter::writeAttributeGroupTable() {
           Record.append(Val.begin(), Val.end());
           Record.push_back(0);
         }
-      } else {
-        assert(Attr.isTypeAttribute());
+      } else if (Attr.isTypeAttribute()) {
         Type *Ty = Attr.getValueAsType();
         Record.push_back(Ty ? 6 : 5);
         Record.push_back(getAttrKindEncoding(Attr.getKindAsEnum()));
         if (Ty)
           Record.push_back(VE.getTypeID(Attr.getValueAsType()));
+      } else if (Attr.isMetadataAttribute()) {
+        Metadata *Meta = Attr.getValueAsMetadata();
+        Record.push_back(Meta ? 8 : 7);
+        Record.push_back(getAttrKindEncoding(Attr.getKindAsEnum()));
+        if (Meta)
+          Record.push_back(VE.getMetadataID(Meta));
+      } else {
+        llvm_unreachable("Trying to encode unknown attribute kind");
       }
     }
 

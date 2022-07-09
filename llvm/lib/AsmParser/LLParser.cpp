@@ -1409,6 +1409,9 @@ bool LLParser::parseEnumAttribute(Attribute::AttrKind Attr, AttrBuilder &B,
   if (Attribute::isTypeAttrKind(Attr))
     return parseRequiredTypeAttr(B, Lex.getKind(), Attr);
 
+  if (Attribute::isMetadataAttrKind(Attr))
+    return parseRequiredMetadataAttr(B, Lex.getKind(), Attr);
+
   switch (Attr) {
   case Attribute::Alignment: {
     MaybeAlign Alignment;
@@ -2789,6 +2792,24 @@ bool LLParser::parseRequiredTypeAttr(AttrBuilder &B, lltok::Kind AttrToken,
     return error(Lex.getLoc(), "expected ')'");
 
   B.addTypeAttr(AttrKind, Ty);
+  return false;
+}
+
+/// parseRequiredMetadataAttr
+///   ::= attrname(<meta>)
+bool LLParser::parseRequiredMetadataAttr(AttrBuilder &B, lltok::Kind AttrToken,
+                                         Attribute::AttrKind AttrKind) {
+  Metadata *Meta = nullptr;
+  if (!EatIfPresent(AttrToken))
+    return true;
+  if (!EatIfPresent(lltok::lparen))
+    return error(Lex.getLoc(), "expected '('");
+  if (parseMetadata(Meta, nullptr))
+    return true;
+  if (!EatIfPresent(lltok::rparen))
+    return error(Lex.getLoc(), "expected ')'");
+
+  B.addMetadataAttr(AttrKind, Meta);
   return false;
 }
 

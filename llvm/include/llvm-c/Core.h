@@ -643,6 +643,17 @@ LLVMAttributeRef LLVMCreateTypeAttribute(LLVMContextRef C, unsigned KindID,
 LLVMTypeRef LLVMGetTypeAttributeValue(LLVMAttributeRef A);
 
 /**
+ * Create a metadata attribute
+ */
+LLVMAttributeRef LLVMCreateMetadataAttribute(LLVMContextRef C, unsigned KindID,
+                                             LLVMMetadataRef type_ref);
+
+/**
+ * Get the metadata attribute's value.
+ */
+LLVMMetadataRef LLVMGetMetadataAttributeValue(LLVMAttributeRef A);
+
+/**
  * Create a string attribute.
  */
 LLVMAttributeRef LLVMCreateStringAttribute(LLVMContextRef C,
@@ -665,6 +676,7 @@ const char *LLVMGetStringAttributeValue(LLVMAttributeRef A, unsigned *Length);
 LLVMBool LLVMIsEnumAttribute(LLVMAttributeRef A);
 LLVMBool LLVMIsStringAttribute(LLVMAttributeRef A);
 LLVMBool LLVMIsTypeAttribute(LLVMAttributeRef A);
+LLVMBool LLVMIsMetadataAttribute(LLVMAttributeRef A);
 
 /**
  * Obtain a Type from a context by its registered name.

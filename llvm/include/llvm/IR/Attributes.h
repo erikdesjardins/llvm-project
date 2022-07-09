@@ -21,6 +21,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/IR/Metadata.h"
 #include "llvm/Support/Alignment.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/PointerLikeTypeTraits.h"
@@ -105,6 +106,9 @@ public:
   static bool isTypeAttrKind(AttrKind Kind) {
     return Kind >= FirstTypeAttr && Kind <= LastTypeAttr;
   }
+  static bool isMetadataAttrKind(AttrKind Kind) {
+    return Kind >= FirstMetadataAttr && Kind <= LastMetadataAttr;
+  }
 
   static bool canUseAsFnAttr(AttrKind Kind);
   static bool canUseAsParamAttr(AttrKind Kind);
@@ -127,6 +131,7 @@ public:
   static Attribute get(LLVMContext &Context, StringRef Kind,
                        StringRef Val = StringRef());
   static Attribute get(LLVMContext &Context, AttrKind Kind, Type *Ty);
+  static Attribute get(LLVMContext &Context, AttrKind Kind, Metadata *Meta);
 
   /// Return a uniquified Attribute object that has the specific
   /// alignment set.
@@ -181,6 +186,9 @@ public:
   /// Return true if the attribute is a type attribute.
   bool isTypeAttribute() const;
 
+  /// Return true if the attribute is a metadata attribute.
+  bool isMetadataAttribute() const;
+
   /// Return true if the attribute is any kind of attribute.
   bool isValid() const { return pImpl; }
 
@@ -213,6 +221,10 @@ public:
   /// Return the attribute's value as a Type. This requires the attribute to be
   /// a type attribute.
   Type *getValueAsType() const;
+
+  /// Return the attribute's value as Metadata. This requires the attribute to be
+  /// a metadata attribute.
+  Metadata *getValueAsMetadata() const;
 
   /// Returns the alignment field of an attribute as a byte alignment
   /// value.
@@ -376,6 +388,7 @@ public:
   Type *getPreallocatedType() const;
   Type *getInAllocaType() const;
   Type *getElementType() const;
+  MDNode *getRangeMetadata() const;
   std::optional<std::pair<unsigned, std::optional<unsigned>>> getAllocSizeArgs()
       const;
   unsigned getVScaleRangeMin() const;
@@ -856,6 +869,9 @@ public:
   /// Return the elementtype type for the specified function parameter.
   Type *getParamElementType(unsigned ArgNo) const;
 
+  /// Return the range metadata for the specified function parameter.
+  MDNode *getParamRangeMetadata(unsigned ArgNo) const;
+
   /// Get the stack alignment of the function.
   MaybeAlign getFnStackAlignment() const;
 
@@ -1157,6 +1173,11 @@ public:
   std::optional<std::pair<unsigned, std::optional<unsigned>>> getAllocSizeArgs()
       const;
 
+  /// Retrieve metadata for the given metadata attribute.
+  Metadata *getMetadataAttr(Attribute::AttrKind Kind) const;
+
+  MDNode *getRangeMetadata() const { return cast<MDNode>(getMetadataAttr(Attribute::Range)); }
+
   /// Add integer attribute with raw value (packed/encoded if necessary).
   AttrBuilder &addRawIntAttr(Attribute::AttrKind Kind, uint64_t Value);
 
@@ -1235,6 +1256,12 @@ public:
 
   /// Add memory effect attribute.
   AttrBuilder &addMemoryAttr(MemoryEffects ME);
+
+  /// Add a metadata attribute with the given metadata.
+  AttrBuilder &addMetadataAttr(Attribute::AttrKind Kind, Metadata *Meta);
+
+  /// Add a range attribute with the given range metadata.
+  AttrBuilder &addRangeAttr(MDNode *Meta);
 
   ArrayRef<Attribute> attrs() const { return Attrs; }
 

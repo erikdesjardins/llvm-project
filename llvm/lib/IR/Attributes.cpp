@@ -164,6 +164,28 @@ Attribute Attribute::get(LLVMContext &Context, Attribute::AttrKind Kind,
   return Attribute(PA);
 }
 
+Attribute Attribute::get(LLVMContext &Context, Attribute::AttrKind Kind,
+                         Metadata *Meta) {
+  assert(Attribute::isMetadataAttrKind(Kind) && "Not a metadata attribute");
+  LLVMContextImpl *pImpl = Context.pImpl;
+  FoldingSetNodeID ID;
+  ID.AddInteger(Kind);
+  ID.AddPointer(Meta);
+
+  void *InsertPoint;
+  AttributeImpl *PA = pImpl->AttrsSet.FindNodeOrInsertPos(ID, InsertPoint);
+
+  if (!PA) {
+    // If we didn't find any existing attributes of the same shape then create a
+    // new one and insert it.
+    PA = new (pImpl->Alloc) MetadataAttributeImpl(Kind, Meta);
+    pImpl->AttrsSet.InsertNode(PA, InsertPoint);
+  }
+
+  // Return the Attribute that we found or created.
+  return Attribute(PA);
+}
+
 Attribute Attribute::getWithAlignment(LLVMContext &Context, Align A) {
   assert(A <= llvm::Value::MaximumAlignment && "Alignment too large.");
   return get(Context, Alignment, A.value());
@@ -281,9 +303,13 @@ bool Attribute::isTypeAttribute() const {
   return pImpl && pImpl->isTypeAttribute();
 }
 
+bool Attribute::isMetadataAttribute() const {
+  return pImpl && pImpl->isMetadataAttribute();
+}
+
 Attribute::AttrKind Attribute::getKindAsEnum() const {
   if (!pImpl) return None;
-  assert((isEnumAttribute() || isIntAttribute() || isTypeAttribute()) &&
+  assert((isEnumAttribute() || isIntAttribute() || isTypeAttribute() || isMetadataAttribute()) &&
          "Invalid attribute type to get the kind as an enum!");
   return pImpl->getKindAsEnum();
 }
@@ -323,6 +349,12 @@ Type *Attribute::getValueAsType() const {
   return pImpl->getValueAsType();
 }
 
+Metadata *Attribute::getValueAsMetadata() const {
+  if (!pImpl) return {};
+  assert(isMetadataAttribute() &&
+         "Invalid attribute type to get the value as metadata!");
+  return pImpl->getValueAsMetadata();
+}
 
 bool Attribute::hasAttribute(AttrKind Kind) const {
   return (pImpl && pImpl->hasAttribute(Kind)) || (!pImpl && Kind == None);
@@ -421,6 +453,16 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
     Result += '(';
     raw_string_ostream OS(Result);
     getValueAsType()->print(OS, false, true);
+    OS.flush();
+    Result += ')';
+    return Result;
+  }
+
+  if (isMetadataAttribute()) {
+    std::string Result = getNameFromAttrKind(getKindAsEnum()).str();
+    Result += '(';
+    raw_string_ostream OS(Result);
+    getValueAsMetadata()->printAsOperand(OS, nullptr);
     OS.flush();
     Result += ')';
     return Result;
@@ -632,7 +674,7 @@ bool AttributeImpl::hasAttribute(StringRef Kind) const {
 }
 
 Attribute::AttrKind AttributeImpl::getKindAsEnum() const {
-  assert(isEnumAttribute() || isIntAttribute() || isTypeAttribute());
+  assert(isEnumAttribute() || isIntAttribute() || isTypeAttribute() || isMetadataAttribute());
   return static_cast<const EnumAttributeImpl *>(this)->getEnumKind();
 }
 
@@ -661,6 +703,11 @@ Type *AttributeImpl::getValueAsType() const {
   return static_cast<const TypeAttributeImpl *>(this)->getTypeValue();
 }
 
+Metadata *AttributeImpl::getValueAsMetadata() const {
+  assert(isMetadataAttribute());
+  return static_cast<const MetadataAttributeImpl *>(this)->getMetadataValue();
+}
+
 bool AttributeImpl::operator<(const AttributeImpl &AI) const {
   if (this == &AI)
     return false;
@@ -674,6 +721,7 @@ bool AttributeImpl::operator<(const AttributeImpl &AI) const {
       return getKindAsEnum() < AI.getKindAsEnum();
     assert(!AI.isEnumAttribute() && "Non-unique attribute");
     assert(!AI.isTypeAttribute() && "Comparison of types would be unstable");
+    assert(!AI.isMetadataAttribute() && "Comparison of metadata would be unstable");
     // TODO: Is this actually needed?
     assert(AI.isIntAttribute() && "Only possibility left");
     return getValueAsInt() < AI.getValueAsInt();
@@ -811,6 +859,10 @@ Type *AttributeSet::getInAllocaType() const {
 
 Type *AttributeSet::getElementType() const {
   return SetNode ? SetNode->getAttributeType(Attribute::ElementType) : nullptr;
+}
+
+MDNode *AttributeSet::getRangeMetadata() const {
+  return SetNode ? cast<MDNode>(SetNode->getAttributeMetadata(Attribute::Range)) : nullptr;
 }
 
 std::optional<std::pair<unsigned, std::optional<unsigned>>>
@@ -972,6 +1024,12 @@ MaybeAlign AttributeSetNode::getStackAlignment() const {
 Type *AttributeSetNode::getAttributeType(Attribute::AttrKind Kind) const {
   if (auto A = findEnumAttribute(Kind))
     return A->getValueAsType();
+  return nullptr;
+}
+
+Metadata *AttributeSetNode::getAttributeMetadata(Attribute::AttrKind Kind) const {
+  if (auto A = findEnumAttribute(Kind))
+    return A->getValueAsMetadata();
   return nullptr;
 }
 
@@ -1535,6 +1593,10 @@ Type *AttributeList::getParamElementType(unsigned Index) const {
   return getAttributes(Index + FirstArgIndex).getElementType();
 }
 
+MDNode *AttributeList::getParamRangeMetadata(unsigned Index) const {
+  return getAttributes(Index + FirstArgIndex).getRangeMetadata();
+}
+
 MaybeAlign AttributeList::getFnStackAlignment() const {
   return getFnAttrs().getStackAlignment();
 }
@@ -1835,6 +1897,20 @@ AttrBuilder &AttrBuilder::addPreallocatedAttr(Type *Ty) {
 
 AttrBuilder &AttrBuilder::addInAllocaAttr(Type *Ty) {
   return addTypeAttr(Attribute::InAlloca, Ty);
+}
+
+Metadata *AttrBuilder::getMetadataAttr(Attribute::AttrKind Kind) const {
+  assert(Attribute::isMetadataAttrKind(Kind) && "Not a metadata attribute");
+  Attribute A = getAttribute(Kind);
+  return A.isValid() ? A.getValueAsMetadata() : nullptr;
+}
+
+AttrBuilder &AttrBuilder::addMetadataAttr(Attribute::AttrKind Kind, Metadata *Meta) {
+  return addAttribute(Attribute::get(Ctx, Kind, Meta));
+}
+
+AttrBuilder &AttrBuilder::addRangeAttr(MDNode *Meta) {
+  return addMetadataAttr(Attribute::Range, Meta);
 }
 
 AttrBuilder &AttrBuilder::merge(const AttrBuilder &B) {

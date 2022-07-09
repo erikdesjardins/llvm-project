@@ -352,6 +352,8 @@ namespace llvm {
                                     bool inAttrGrp, LocTy &BuiltinLoc);
     bool parseRequiredTypeAttr(AttrBuilder &B, lltok::Kind AttrToken,
                                Attribute::AttrKind AttrKind);
+    bool parseRequiredMetadataAttr(AttrBuilder &B, lltok::Kind AttrToken,
+                                   Attribute::AttrKind AttrKind);
 
     // Module Summary Index Parsing.
     bool skipModuleSummaryEntry();

@@ -46,6 +46,7 @@ protected:
     IntAttrEntry,
     StringAttrEntry,
     TypeAttrEntry,
+    MetadataAttrEntry
   };
 
   AttributeImpl(AttrEntryKind KindID) : KindID(KindID) {}
@@ -59,6 +60,7 @@ public:
   bool isIntAttribute() const { return KindID == IntAttrEntry; }
   bool isStringAttribute() const { return KindID == StringAttrEntry; }
   bool isTypeAttribute() const { return KindID == TypeAttrEntry; }
+  bool isMetadataAttribute() const { return KindID == MetadataAttrEntry; }
 
   bool hasAttribute(Attribute::AttrKind A) const;
   bool hasAttribute(StringRef Kind) const;
@@ -72,6 +74,8 @@ public:
 
   Type *getValueAsType() const;
 
+  Metadata *getValueAsMetadata() const;
+
   /// Used when sorting the attributes.
   bool operator<(const AttributeImpl &AI) const;
 
@@ -82,8 +86,12 @@ public:
       Profile(ID, getKindAsEnum(), getValueAsInt());
     else if (isStringAttribute())
       Profile(ID, getKindAsString(), getValueAsString());
-    else
+    else if (isTypeAttribute())
       Profile(ID, getKindAsEnum(), getValueAsType());
+    else if (isMetadataAttribute())
+      Profile(ID, getKindAsEnum(), getValueAsMetadata());
+    else
+      llvm_unreachable("invalid attribute kind");
   }
 
   static void Profile(FoldingSetNodeID &ID, Attribute::AttrKind Kind) {
@@ -107,6 +115,12 @@ public:
                       Type *Ty) {
     ID.AddInteger(Kind);
     ID.AddPointer(Ty);
+  }
+
+  static void Profile(FoldingSetNodeID &ID, Attribute::AttrKind Kind,
+                      Metadata *Meta) {
+    ID.AddInteger(Kind);
+    ID.AddPointer(Meta);
   }
 };
 
@@ -196,6 +210,16 @@ public:
   Type *getTypeValue() const { return Ty; }
 };
 
+class MetadataAttributeImpl : public EnumAttributeImpl {
+  Metadata *Meta;
+
+public:
+  MetadataAttributeImpl(Attribute::AttrKind Kind, Metadata *Meta)
+      : EnumAttributeImpl(MetadataAttrEntry, Kind), Meta(Meta) {}
+
+  Metadata *getMetadataValue() const { return Meta; }
+};
+
 class AttributeBitSet {
   /// Bitset with a bit for each available attribute Attribute::AttrKind.
   uint8_t AvailableAttrs[12] = {};
@@ -268,6 +292,7 @@ public:
   MemoryEffects getMemoryEffects() const;
   std::string getAsString(bool InAttrGrp) const;
   Type *getAttributeType(Attribute::AttrKind Kind) const;
+  Metadata *getAttributeMetadata(Attribute::AttrKind Kind) const;
 
   using iterator = const Attribute *;
 

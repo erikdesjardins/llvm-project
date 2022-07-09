@@ -38,6 +38,9 @@ class IntAttr<string S, list<AttrProperty> P> : Attr<S, P>;
 /// Type attribute.
 class TypeAttr<string S, list<AttrProperty> P> : Attr<S, P>;
 
+/// Type attribute.
+class MetadataAttr<string S, list<AttrProperty> P> : Attr<S, P>;
+
 /// StringBool attribute.
 class StrBoolAttr<string S> : Attr<S, []>;
 
@@ -205,6 +208,9 @@ def OptimizeNone : EnumAttr<"optnone", [FnAttr]>;
 
 /// Similar to byval but without a copy.
 def Preallocated : TypeAttr<"preallocated", [FnAttr, ParamAttr]>;
+
+/// Valid range for parameter.
+def Range : MetadataAttr<"range", [ParamAttr]>;
 
 /// Function does not access memory.
 def ReadNone : EnumAttr<"readnone", [ParamAttr]>;

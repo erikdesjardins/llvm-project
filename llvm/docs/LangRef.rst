@@ -1173,6 +1173,23 @@ Currently, only the following parameter attributes are defined:
     site. If the alignment is not specified, then the code generator
     makes a target-specific assumption.
 
+.. _attr_range:
+
+``range(<meta>)``
+    This indicates the possible ranges the parameter can take.
+    If the parameter is not in the specified range,
+    :ref:`poison value <poisonvalues>` is passed instead.
+    This attribute must reference a single metadata node, with the same format
+    and behavior as used for :ref:`range metadata <range-metadata>`.
+
+.. code-block:: llvm
+
+    define void @f(i8 range(!0) %a) {
+      ; %a can only be 0, 1, 3, 4 or 5
+    }
+
+    !0 = !{ i8 0, i8 2, i8 3, i8 6 }
+
 .. _attr_inalloca:
 
 ``inalloca(<ty>)``

@@ -56,6 +56,12 @@ define void @f9(ptr nest %0)
         ret void;
 }
 
+define void @f9_5(i8 range(!0) %0)
+; CHECK: define void @f9_5(i8 range(!0) %0)
+{
+        ret void
+}
+
 define void @f10() readnone
 ; CHECK: define void @f10() #2
 {
@@ -567,3 +573,7 @@ define void @f88() skipprofile { ret void }
 ; CHECK: attributes [[FNRETTHUNKEXTERN]] = { fn_ret_thunk_extern }
 ; CHECK: attributes [[SKIPPROFILE]] = { skipprofile }
 ; CHECK: attributes #[[NOBUILTIN]] = { nobuiltin }
+
+!0 = !{ i8 0, i8 2, i8 3, i8 6 }
+
+; CHECK: !0 = !{ i8 0, i8 2, i8 3, i8 6 }

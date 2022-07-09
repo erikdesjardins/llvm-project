@@ -1995,6 +1995,8 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::OptimizeNone;
   case bitc::ATTR_KIND_READ_NONE:
     return Attribute::ReadNone;
+  case bitc::ATTR_KIND_RANGE:
+    return Attribute::Range;
   case bitc::ATTR_KIND_READ_ONLY:
     return Attribute::ReadOnly;
   case bitc::ATTR_KIND_RETURNED:
@@ -2229,6 +2231,15 @@ Error BitcodeReader::parseAttributeGroupBlock() {
             return error("Not a type attribute");
 
           B.addTypeAttr(Kind, HasType ? getTypeByID(Record[++i]) : nullptr);
+        } else if (Record[i] == 7 || Record[i] == 8) {
+          bool HasMetadata = Record[i] == 8;
+          Attribute::AttrKind Kind;
+          if (Error Err = parseAttrKind(Record[++i], &Kind))
+            return Err;
+          if (!Attribute::isMetadataAttrKind(Kind))
+            return error("Not a metadata attribute");
+
+          B.addMetadataAttr(Kind, HasMetadata ? MDLoader->getMetadataFwdRefOrLoad(Record[++i]) : nullptr);
         } else {
           return error("Invalid attribute group entry");
         }

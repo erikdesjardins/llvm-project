@@ -466,7 +466,7 @@ private:
   void visitModuleFlagCGProfileEntry(const MDOperand &MDO);
   void visitFunction(const Function &F);
   void visitBasicBlock(BasicBlock &BB);
-  void visitRangeMetadata(Instruction &I, MDNode *Range, Type *Ty);
+  void visitRangeMetadata(MDNode *Range, Type *Ty);
   void visitDereferenceableMetadata(Instruction &I, MDNode *MD);
   void visitProfMetadata(Instruction &I, MDNode *MD);
   void visitCallStackMetadata(MDNode *MD);
@@ -1872,6 +1872,11 @@ void Verifier::verifyParameterAttrs(AttributeSet Attrs, Type *Ty,
                   "' applied to incompatible type!", V);
       return;
     }
+  }
+
+  if (Attrs.hasAttribute(Attribute::Range)) {
+    MDNode* Meta = Attrs.getRangeMetadata();
+    visitRangeMetadata(Meta, Ty);
   }
 
   if (PointerType *PTy = dyn_cast<PointerType>(Ty)) {
@@ -3838,10 +3843,7 @@ static bool isContiguous(const ConstantRange &A, const ConstantRange &B) {
   return A.getUpper() == B.getLower() || A.getLower() == B.getUpper();
 }
 
-void Verifier::visitRangeMetadata(Instruction &I, MDNode *Range, Type *Ty) {
-  assert(Range && Range == I.getMetadata(LLVMContext::MD_range) &&
-         "precondition violation");
-
+void Verifier::visitRangeMetadata(MDNode *Range, Type *Ty) {
   unsigned NumOperands = Range->getNumOperands();
   Check(NumOperands % 2 == 0, "Unfinished range!", Range);
   unsigned NumRanges = NumOperands / 2;
@@ -3856,7 +3858,7 @@ void Verifier::visitRangeMetadata(Instruction &I, MDNode *Range, Type *Ty) {
         mdconst::dyn_extract<ConstantInt>(Range->getOperand(2 * i + 1));
     Check(High, "The upper limit must be an integer!", High);
     Check(High->getType() == Low->getType() && High->getType() == Ty,
-          "Range types must match instruction type!", &I);
+          "Range types must match instruction type!", Ty);
 
     APInt HighV = High->getValue();
     APInt LowV = Low->getValue();
@@ -4823,7 +4825,7 @@ void Verifier::visitInstruction(Instruction &I) {
   if (MDNode *Range = I.getMetadata(LLVMContext::MD_range)) {
     Check(isa<LoadInst>(I) || isa<CallInst>(I) || isa<InvokeInst>(I),
           "Ranges are only for loads, calls and invokes!", &I);
-    visitRangeMetadata(I, Range, I.getType());
+    visitRangeMetadata(Range, I.getType());
   }
 
   if (I.hasMetadata(LLVMContext::MD_invariant_group)) {

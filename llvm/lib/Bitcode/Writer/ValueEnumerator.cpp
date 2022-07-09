@@ -1014,6 +1014,8 @@ void ValueEnumerator::EnumerateAttributes(AttributeList PAL) {
       for (Attribute Attr : AS) {
         if (Attr.isTypeAttribute())
           EnumerateType(Attr.getValueAsType());
+        else if (Attr.isMetadataAttribute())
+          EnumerateMetadata(nullptr, Attr.getValueAsMetadata());
       }
     }
   }
