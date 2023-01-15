@@ -3693,6 +3693,7 @@ static Value *simplifyICmpInst(unsigned Predicate, Value *LHS, Value *RHS,
     auto RHS_Instr = cast<Instruction>(RHS);
     auto LHS_Instr = cast<Instruction>(LHS);
 
+    // TODO: look at all usages of MD_range and adapt to look at range attributes on arguments too
     if (Q.IIQ.getMetadata(RHS_Instr, LLVMContext::MD_range) &&
         Q.IIQ.getMetadata(LHS_Instr, LLVMContext::MD_range)) {
       auto RHS_CR = getConstantRangeFromMetadata(

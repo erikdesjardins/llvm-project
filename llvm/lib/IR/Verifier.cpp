@@ -1876,6 +1876,8 @@ void Verifier::verifyParameterAttrs(AttributeSet Attrs, Type *Ty,
 
   if (Attrs.hasAttribute(Attribute::Range)) {
     MDNode* Meta = Attrs.getRangeMetadata();
+    //Meta->dump();
+    //Meta->dumpTree();
     visitRangeMetadata(Meta, Ty);
   }
 

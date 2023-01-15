@@ -2806,6 +2806,32 @@ bool LLParser::parseRequiredMetadataAttr(AttrBuilder &B, lltok::Kind AttrToken,
     return error(Lex.getLoc(), "expected '('");
   if (parseMetadata(Meta, nullptr))
     return true;
+  // TODO: this doesn't work because RAUW doesn't work.
+  //
+  // The general sequence of events is:
+  // 1. A forward referenced metadata node, like `@foo(i64 range(!0) %a)` is parsed.
+  // 2. Because it's forward declared, we insert a temp md node in `LLParser::ForwardRefMDNodes`,
+  //    and return a pointer to that temp md node.
+  // 3. We add the metadata attribute to the function argument, and the attribute is interned
+  //    (using the temp md node) via `AttributeImpl::Profile` and the `Attribute::get(..., Metadata*)` overload.
+  // 4. We later parse the definition of the forward-declared metadata, like `!0 = !{i64 0, i64 1}`,
+  //    extract the temp md node pointer from `LLParser::ForwardRefMDNodes`, and call RAUW on it.
+  //    But this doesn't update the attribute, which has already been interned with the temp md node.
+  //
+  // Solutions (with varying degrees of badness and functionality):
+  // 1. Use TrackingMDRef. Although it is intended for this use case, it only allows other metadata nodes as parents
+  //    (see `using OwnerTy = PointerUnion<MetadataAsValue *, Metadata *>;`), so it won't actually update the attribute.
+  //    Potentially, this could be expanded to allow attributes as owners, but it seems like attributes themselves don't support RAUW
+  //    (they're intended to be immutable?), so I'd also have to implement that...
+  // 2. Add another temp data structure holding incomplete metadata attributes, similar to `ForwardRefMDNodes`,
+  //    that contains, e.g. the function, argument index, attribute kind, etc. Then, when we encounter
+  //    a metadata attribute with forward declared metadata, we defer adding the attribute until we later parse the definition.
+  //    This is a bit awkward to implement in the parser, because we'd have to pass down the enclosing function,
+  //    argument index, etc. through a bunch of layers (right now we just pass an AttrBuilder reference).
+  // 3. (this solution) Forbid forward declared metadata in metadata attributes. This is only a problem for textual IR, so maybe it's fine?
+  if (cast<MDNode>(Meta)->isTemporary())
+  	return error(Lex.getLoc(), "metadata in metadata attribute "
+  	                           "cannot be forward declared");
   if (!EatIfPresent(lltok::rparen))
     return error(Lex.getLoc(), "expected ')'");
 

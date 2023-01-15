@@ -20,6 +20,7 @@
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/Attributes.h"
+#include "llvm/IR/TrackingMDRef.h"
 #include "llvm/Support/TrailingObjects.h"
 #include <cassert>
 #include <cstddef>
@@ -120,6 +121,9 @@ public:
   static void Profile(FoldingSetNodeID &ID, Attribute::AttrKind Kind,
                       Metadata *Meta) {
     ID.AddInteger(Kind);
+    //Meta->dump();
+    //if (MDNode* MD = cast<MDNode>(Meta))
+    //  assert(MD->isResolved() && "not resolved");
     ID.AddPointer(Meta);
   }
 };
@@ -211,7 +215,9 @@ public:
 };
 
 class MetadataAttributeImpl : public EnumAttributeImpl {
-  Metadata *Meta;
+  // TODO maybe?
+  // TrackingMDRef Meta;
+  Metadata* Meta;
 
 public:
   MetadataAttributeImpl(Attribute::AttrKind Kind, Metadata *Meta)

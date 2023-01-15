@@ -615,7 +615,9 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
 bool Attribute::hasParentContext(LLVMContext &C) const {
   assert(isValid() && "invalid Attribute doesn't refer to any context");
   FoldingSetNodeID ID;
+  // printf("about to profile for context\n");
   pImpl->Profile(ID);
+  // printf("done profiling for context\n");
   void *Unused;
   return C.pImpl->AttrsSet.FindNodeOrInsertPos(ID, Unused) == pImpl;
 }
