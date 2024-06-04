@@ -4,13 +4,9 @@
 
 define i64 @slice_iter_roundtrip_via_slice(ptr %p, i64 %x) {
 ; CHECK-LABEL: define i64 @slice_iter_roundtrip_via_slice(
-; CHECK-SAME: ptr [[P:%.*]], i64 [[X:%.*]]) local_unnamed_addr #[[ATTR0:[0-9]+]] {
+; CHECK-SAME: ptr nocapture readnone [[P:%.*]], i64 returned [[X:%.*]]) local_unnamed_addr #[[ATTR0:[0-9]+]] {
 ; CHECK-NEXT:  [[START:.*:]]
-; CHECK-NEXT:    [[PTR:%.*]] = ptrtoint ptr [[P]] to i64
-; CHECK-NEXT:    [[DIFF:%.*]] = sub i64 [[X]], [[PTR]]
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr inbounds i8, ptr [[P]], i64 [[DIFF]]
-; CHECK-NEXT:    [[LEN:%.*]] = ptrtoint ptr [[GEP]] to i64
-; CHECK-NEXT:    ret i64 [[LEN]]
+; CHECK-NEXT:    ret i64 [[X]]
 ;
 start:
   %ptr = ptrtoint ptr %p to i64

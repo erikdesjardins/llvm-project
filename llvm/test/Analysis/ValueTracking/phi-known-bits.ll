@@ -563,7 +563,11 @@ define i1 @recursiveGEP_withPtrSub3(ptr %val1) {
 ; CHECK-NEXT:    [[CMP3_NOT_I:%.*]] = icmp eq i8 [[TMP0]], 0
 ; CHECK-NEXT:    br i1 [[CMP3_NOT_I]], label [[WHILE_END_I:%.*]], label [[WHILE_COND_I]]
 ; CHECK:       while.end.i:
-; CHECK-NEXT:    ret i1 false
+; CHECK-NEXT:    [[SUB_PTR_LHS_CAST_I:%.*]] = ptrtoint ptr [[TEST_0_I]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VAL1]] to i64
+; CHECK-NEXT:    [[SUB_PTR_RHS_CAST_I:%.*]] = add nuw i64 [[TMP1]], 5
+; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq i64 [[SUB_PTR_RHS_CAST_I]], [[SUB_PTR_LHS_CAST_I]]
+; CHECK-NEXT:    ret i1 [[BOOL]]
 ;
 entry:
   %test.val1 = getelementptr inbounds i8, ptr %val1, i64 7
@@ -596,8 +600,10 @@ define i1 @recursiveGEP_withPtrSub1_notKnownNonEqual1(ptr %val1, i64 %val2) {
 ; CHECK-NEXT:    [[CMP3_NOT_I:%.*]] = icmp eq i8 [[TMP0]], 0
 ; CHECK-NEXT:    br i1 [[CMP3_NOT_I]], label [[WHILE_END_I:%.*]], label [[WHILE_COND_I]]
 ; CHECK:       while.end.i:
-; CHECK-NEXT:    [[TMP1:%.*]] = getelementptr inbounds i8, ptr [[VAL1]], i64 [[VAL2:%.*]]
-; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq ptr [[TEST_0_I]], [[TMP1]]
+; CHECK-NEXT:    [[SUB_PTR_LHS_CAST_I:%.*]] = ptrtoint ptr [[TEST_0_I]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VAL1]] to i64
+; CHECK-NEXT:    [[SUB_PTR_RHS_CAST_I:%.*]] = add i64 [[TMP1]], [[VAL2:%.*]]
+; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq i64 [[SUB_PTR_RHS_CAST_I]], [[SUB_PTR_LHS_CAST_I]]
 ; CHECK-NEXT:    ret i1 [[BOOL]]
 ;
 entry:
@@ -798,7 +804,10 @@ define i1 @recursiveGEP_withPtrSub_noninboundStepAndB(ptr %val1) {
 ; CHECK-NEXT:    [[CMP3_NOT_I:%.*]] = icmp eq i8 [[TMP0]], 0
 ; CHECK-NEXT:    br i1 [[CMP3_NOT_I]], label [[WHILE_END_I:%.*]], label [[WHILE_COND_I]]
 ; CHECK:       while.end.i:
-; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq ptr [[A_PN_I]], [[VAL1]]
+; CHECK-NEXT:    [[SUB_PTR_LHS_CAST_I:%.*]] = ptrtoint ptr [[TEST_0_I]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VAL1]] to i64
+; CHECK-NEXT:    [[TMP2:%.*]] = add i64 [[SUB_PTR_LHS_CAST_I]], -1
+; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq i64 [[TMP2]], [[TMP1]]
 ; CHECK-NEXT:    ret i1 [[BOOL]]
 ;
 entry:
@@ -869,7 +878,10 @@ define i1 @recursiveGEP_withPtrSub_noninboundSameDefStartAndB(ptr %val1) {
 ; CHECK-NEXT:    [[CMP3_NOT_I:%.*]] = icmp eq i8 [[TMP0]], 0
 ; CHECK-NEXT:    br i1 [[CMP3_NOT_I]], label [[WHILE_END_I:%.*]], label [[WHILE_COND_I]]
 ; CHECK:       while.end.i:
-; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq ptr [[A_PN_I]], [[VAL1]]
+; CHECK-NEXT:    [[SUB_PTR_LHS_CAST_I:%.*]] = ptrtoint ptr [[TEST_0_I]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VAL1]] to i64
+; CHECK-NEXT:    [[TMP2:%.*]] = add i64 [[SUB_PTR_LHS_CAST_I]], -1
+; CHECK-NEXT:    [[BOOL:%.*]] = icmp eq i64 [[TMP2]], [[TMP1]]
 ; CHECK-NEXT:    ret i1 [[BOOL]]
 ;
 entry:

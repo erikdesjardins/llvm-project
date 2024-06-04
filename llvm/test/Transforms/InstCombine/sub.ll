@@ -1110,8 +1110,14 @@ define i32 @test57(i32 %A, i32 %B) {
 
 define i64 @test58(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @test58(
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub i64 [[I:%.*]], [[J:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i64
+; CHECK-NEXT:    [[GEP1_OFFS:%.*]] = add nsw i64 [[I:%.*]], 4200
+; CHECK-NEXT:    [[CAST1:%.*]] = add i64 [[GEP1_OFFS]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[GEP2_OFFS:%.*]] = add nsw i64 [[J:%.*]], 4200
+; CHECK-NEXT:    [[CAST2:%.*]] = add i64 [[GEP2_OFFS]], [[TMP2]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %gep1 = getelementptr inbounds [100 x [100 x i8]], ptr %foo, i64 0, i64 42, i64 %i
   %gep2 = getelementptr inbounds [100 x [100 x i8]], ptr %foo, i64 0, i64 42, i64 %j
@@ -1143,12 +1149,13 @@ define i64 @test59(ptr %foo, i64 %i) {
 
 define i64 @test60(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @test60(
-; CHECK-NEXT:    [[GEP1_IDX:%.*]] = mul nsw i64 [[J:%.*]], 100
-; CHECK-NEXT:    [[GEP1_OFFS:%.*]] = add nsw i64 [[GEP1_IDX]], [[I:%.*]]
-; CHECK-NEXT:    [[GEP1:%.*]] = getelementptr inbounds i8, ptr [[FOO:%.*]], i64 [[GEP1_OFFS]]
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = add nsw i64 [[GEP1_OFFS]], -4200
+; CHECK-NEXT:    [[GEP1:%.*]] = getelementptr inbounds [100 x [100 x i8]], ptr [[FOO:%.*]], i64 0, i64 [[J:%.*]], i64 [[I:%.*]]
+; CHECK-NEXT:    [[CAST1:%.*]] = ptrtoint ptr [[GEP1]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST2:%.*]] = add nuw i64 [[TMP1]], 4200
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
 ; CHECK-NEXT:    store ptr [[GEP1]], ptr @dummy_global1, align 8
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
 ; gep1 has a non-constant index and more than one uses. Shouldn't duplicate the arithmetic.
   %gep1 = getelementptr inbounds [100 x [100 x i8]], ptr %foo, i64 0, i64 %j, i64 %i
@@ -1162,12 +1169,13 @@ define i64 @test60(ptr %foo, i64 %i, i64 %j) {
 
 define i64 @test61(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @test61(
-; CHECK-NEXT:    [[GEP2_IDX:%.*]] = mul nsw i64 [[J:%.*]], 100
-; CHECK-NEXT:    [[GEP2_OFFS:%.*]] = add nsw i64 [[GEP2_IDX]], [[I:%.*]]
-; CHECK-NEXT:    [[GEP2:%.*]] = getelementptr inbounds i8, ptr [[FOO:%.*]], i64 [[GEP2_OFFS]]
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub nsw i64 4200, [[GEP2_OFFS]]
+; CHECK-NEXT:    [[GEP2:%.*]] = getelementptr inbounds [100 x [100 x i8]], ptr [[FOO:%.*]], i64 0, i64 [[J:%.*]], i64 [[I:%.*]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST1:%.*]] = add nuw i64 [[TMP1]], 4200
+; CHECK-NEXT:    [[CAST2:%.*]] = ptrtoint ptr [[GEP2]] to i64
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
 ; CHECK-NEXT:    store ptr [[GEP2]], ptr @dummy_global2, align 8
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
 ; gep2 has a non-constant index and more than one uses. Shouldn't duplicate the arithmetic.
   %gep1 = getelementptr inbounds [100 x [100 x i8]], ptr %foo, i64 0, i64 42, i64 0
@@ -1185,8 +1193,11 @@ define i64 @test_sub_ptradd_multiuse(ptr %p, i64 %idx1, i64 %idx2) {
 ; CHECK-LABEL: @test_sub_ptradd_multiuse(
 ; CHECK-NEXT:    [[P1:%.*]] = getelementptr inbounds i8, ptr [[P:%.*]], i64 [[IDX1:%.*]]
 ; CHECK-NEXT:    call void @use.ptr(ptr [[P1]])
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub nsw i64 [[IDX1]], [[IDX2:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[P1_INT:%.*]] = ptrtoint ptr [[P1]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[P]] to i64
+; CHECK-NEXT:    [[P2_INT:%.*]] = add i64 [[TMP1]], [[IDX2:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[P1_INT]], [[P2_INT]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %p1 = getelementptr inbounds i8, ptr %p, i64 %idx1
   call void @use.ptr(ptr %p1)

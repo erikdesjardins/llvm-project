@@ -9,8 +9,8 @@ declare void @use_ptr(ptr)
 define i64 @test_basic(ptr %b, i64 %o) {
 ; CHECK-LABEL: define i64 @test_basic(
 ; CHECK-SAME: ptr [[B:%.*]], i64 [[O:%.*]]) {
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr i8, ptr [[B]], i64 [[O]]
-; CHECK-NEXT:    [[INT:%.*]] = ptrtoint ptr [[GEP]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[B]] to i64
+; CHECK-NEXT:    [[INT:%.*]] = add i64 [[TMP1]], [[O]]
 ; CHECK-NEXT:    ret i64 [[INT]]
 ;
   %gep = getelementptr i8, ptr %b, i64 %o
@@ -21,8 +21,11 @@ define i64 @test_basic(ptr %b, i64 %o) {
 define i64 @test_multi_index(ptr %b, i64 %o, i64 %o2) {
 ; CHECK-LABEL: define i64 @test_multi_index(
 ; CHECK-SAME: ptr [[B:%.*]], i64 [[O:%.*]], i64 [[O2:%.*]]) {
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr [0 x [2 x i32]], ptr [[B]], i64 0, i64 [[O]], i64 [[O2]]
-; CHECK-NEXT:    [[INT:%.*]] = ptrtoint ptr [[GEP]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[B]] to i64
+; CHECK-NEXT:    [[GEP_IDX:%.*]] = shl i64 [[O]], 3
+; CHECK-NEXT:    [[GEP_IDX1:%.*]] = shl i64 [[O2]], 2
+; CHECK-NEXT:    [[GEP_OFFS:%.*]] = add i64 [[GEP_IDX]], [[GEP_IDX1]]
+; CHECK-NEXT:    [[INT:%.*]] = add i64 [[GEP_OFFS]], [[TMP1]]
 ; CHECK-NEXT:    ret i64 [[INT]]
 ;
   %gep = getelementptr [0 x [2 x i32]], ptr %b, i64 0, i64 %o, i64 %o2
@@ -33,8 +36,8 @@ define i64 @test_multi_index(ptr %b, i64 %o, i64 %o2) {
 define i64 @test_nuw(ptr %b, i64 %o) {
 ; CHECK-LABEL: define i64 @test_nuw(
 ; CHECK-SAME: ptr [[B:%.*]], i64 [[O:%.*]]) {
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr nuw i8, ptr [[B]], i64 [[O]]
-; CHECK-NEXT:    [[INT:%.*]] = ptrtoint ptr [[GEP]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[B]] to i64
+; CHECK-NEXT:    [[INT:%.*]] = add nuw i64 [[TMP1]], [[O]]
 ; CHECK-NEXT:    ret i64 [[INT]]
 ;
   %gep = getelementptr nuw i8, ptr %b, i64 %o
@@ -45,8 +48,8 @@ define i64 @test_nuw(ptr %b, i64 %o) {
 define i64 @test_nusw(ptr %b, i64 %o) {
 ; CHECK-LABEL: define i64 @test_nusw(
 ; CHECK-SAME: ptr [[B:%.*]], i64 [[O:%.*]]) {
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr nusw i8, ptr [[B]], i64 [[O]]
-; CHECK-NEXT:    [[INT:%.*]] = ptrtoint ptr [[GEP]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[B]] to i64
+; CHECK-NEXT:    [[INT:%.*]] = add i64 [[TMP1]], [[O]]
 ; CHECK-NEXT:    ret i64 [[INT]]
 ;
   %gep = getelementptr nusw i8, ptr %b, i64 %o
@@ -58,8 +61,8 @@ define i64 @test_nusw_nonneg(ptr %b, i64 %o) {
 ; CHECK-LABEL: define i64 @test_nusw_nonneg(
 ; CHECK-SAME: ptr [[B:%.*]], i64 [[O:%.*]]) {
 ; CHECK-NEXT:    [[NONNEG_OFFSET:%.*]] = lshr i64 [[O]], 1
-; CHECK-NEXT:    [[GEP:%.*]] = getelementptr nusw i8, ptr [[B]], i64 [[NONNEG_OFFSET]]
-; CHECK-NEXT:    [[INT:%.*]] = ptrtoint ptr [[GEP]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[B]] to i64
+; CHECK-NEXT:    [[INT:%.*]] = add nuw i64 [[NONNEG_OFFSET]], [[TMP1]]
 ; CHECK-NEXT:    ret i64 [[INT]]
 ;
   %nonneg_offset = lshr i64 %o, 1

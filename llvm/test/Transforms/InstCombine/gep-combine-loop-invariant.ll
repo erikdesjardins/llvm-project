@@ -125,11 +125,10 @@ define void @PR37005_2(ptr %base, ptr %in) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
-; CHECK-NEXT:    [[E1:%.*]] = getelementptr inbounds ptr, ptr [[IN:%.*]], i64 undef
-; CHECK-NEXT:    [[E2:%.*]] = getelementptr inbounds i8, ptr [[E1]], i64 48
-; CHECK-NEXT:    [[PI1:%.*]] = ptrtoint ptr [[E2]] to i64
-; CHECK-NEXT:    [[TMP0:%.*]] = lshr i64 [[PI1]], 14
-; CHECK-NEXT:    [[SL1:%.*]] = and i64 [[TMP0]], 1125899906842496
+; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[IN:%.*]] to i64
+; CHECK-NEXT:    [[PI1:%.*]] = add nuw i64 [[TMP0]], 48
+; CHECK-NEXT:    [[TMP1:%.*]] = lshr i64 [[PI1]], 14
+; CHECK-NEXT:    [[SL1:%.*]] = and i64 [[TMP1]], 1125899906842496
 ; CHECK-NEXT:    [[E5:%.*]] = getelementptr inbounds i8, ptr [[BASE:%.*]], i64 [[SL1]]
 ; CHECK-NEXT:    [[E6:%.*]] = getelementptr inbounds i8, ptr [[E5]], <2 x i64> <i64 80, i64 60>
 ; CHECK-NEXT:    call void @blackhole(<2 x ptr> [[E6]])

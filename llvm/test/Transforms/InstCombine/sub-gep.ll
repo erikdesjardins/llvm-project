@@ -41,7 +41,7 @@ define i64 @test_partial_inbounds2(ptr %base, i64 %idx) {
 
 define i64 @test_inbounds_nuw(ptr %base, i64 %idx) {
 ; CHECK-LABEL: @test_inbounds_nuw(
-; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nuw nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
 ; CHECK-NEXT:    ret i64 [[P2_IDX]]
 ;
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
@@ -65,8 +65,13 @@ define i64 @test_nuw(ptr %base, i64 %idx) {
 
 define i32 @test_inbounds_nuw_trunc(ptr %base, i64 %idx) {
 ; CHECK-LABEL: @test_inbounds_nuw_trunc(
-; CHECK-NEXT:    [[IDX_TR:%.*]] = trunc i64 [[IDX:%.*]] to i32
-; CHECK-NEXT:    [[D:%.*]] = shl i32 [[IDX_TR]], 2
+; CHECK-NEXT:    [[I1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I2:%.*]] = add i64 [[P2_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[T1:%.*]] = trunc i64 [[I1]] to i32
+; CHECK-NEXT:    [[T2:%.*]] = trunc i64 [[I2]] to i32
+; CHECK-NEXT:    [[D:%.*]] = sub nuw i32 [[T2]], [[T1]]
 ; CHECK-NEXT:    ret i32 [[D]]
 ;
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
@@ -80,8 +85,12 @@ define i32 @test_inbounds_nuw_trunc(ptr %base, i64 %idx) {
 
 define i64 @test_inbounds_nuw_swapped(ptr %base, i64 %idx) {
 ; CHECK-LABEL: @test_inbounds_nuw_swapped(
-; CHECK-NEXT:    [[P2_IDX_NEG:%.*]] = mul i64 [[IDX:%.*]], -4
-; CHECK-NEXT:    ret i64 [[P2_IDX_NEG]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P2_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[I2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[D:%.*]] = sub nuw i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
   %i1 = ptrtoint ptr %p2 to i64
@@ -92,8 +101,12 @@ define i64 @test_inbounds_nuw_swapped(ptr %base, i64 %idx) {
 
 define i64 @test_inbounds1_nuw_swapped(ptr %base, i64 %idx) {
 ; CHECK-LABEL: @test_inbounds1_nuw_swapped(
-; CHECK-NEXT:    [[P2_IDX_NEG:%.*]] = mul i64 [[IDX:%.*]], -4
-; CHECK-NEXT:    ret i64 [[P2_IDX_NEG]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P2_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[I2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[D:%.*]] = sub nuw i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p2 = getelementptr [0 x i32], ptr %base, i64 0, i64 %idx
   %i1 = ptrtoint ptr %p2 to i64
@@ -104,8 +117,12 @@ define i64 @test_inbounds1_nuw_swapped(ptr %base, i64 %idx) {
 
 define i64 @test_inbounds2_nuw_swapped(ptr %base, i64 %idx) {
 ; CHECK-LABEL: @test_inbounds2_nuw_swapped(
-; CHECK-NEXT:    [[P2_IDX_NEG:%.*]] = mul i64 [[IDX:%.*]], -4
-; CHECK-NEXT:    ret i64 [[P2_IDX_NEG]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P2_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[I2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[D:%.*]] = sub nuw i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
   %i1 = ptrtoint ptr %p2 to i64
@@ -116,9 +133,14 @@ define i64 @test_inbounds2_nuw_swapped(ptr %base, i64 %idx) {
 
 define i64 @test_inbounds_two_gep(ptr %base, i64 %idx, i64 %idx2) {
 ; CHECK-LABEL: @test_inbounds_two_gep(
-; CHECK-NEXT:    [[TMP1:%.*]] = sub nsw i64 [[IDX2:%.*]], [[IDX:%.*]]
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = shl nsw i64 [[TMP1]], 2
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P1_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P1_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX2:%.*]], 2
+; CHECK-NEXT:    [[I2:%.*]] = add i64 [[P2_IDX]], [[TMP2]]
+; CHECK-NEXT:    [[D:%.*]] = sub i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p1 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx2
@@ -130,9 +152,14 @@ define i64 @test_inbounds_two_gep(ptr %base, i64 %idx, i64 %idx2) {
 
 define i64 @test_inbounds_nsw_two_gep(ptr %base, i64 %idx, i64 %idx2) {
 ; CHECK-LABEL: @test_inbounds_nsw_two_gep(
-; CHECK-NEXT:    [[TMP1:%.*]] = sub nsw i64 [[IDX2:%.*]], [[IDX:%.*]]
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = shl nsw i64 [[TMP1]], 2
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P1_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P1_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX2:%.*]], 2
+; CHECK-NEXT:    [[I2:%.*]] = add i64 [[P2_IDX]], [[TMP2]]
+; CHECK-NEXT:    [[D:%.*]] = sub nsw i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p1 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx2
@@ -144,9 +171,14 @@ define i64 @test_inbounds_nsw_two_gep(ptr %base, i64 %idx, i64 %idx2) {
 
 define i64 @test_inbounds_nuw_two_gep(ptr %base, i64 %idx, i64 %idx2) {
 ; CHECK-LABEL: @test_inbounds_nuw_two_gep(
-; CHECK-NEXT:    [[TMP1:%.*]] = sub nsw i64 [[IDX2:%.*]], [[IDX:%.*]]
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = shl nsw i64 [[TMP1]], 2
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[BASE:%.*]] to i64
+; CHECK-NEXT:    [[P1_IDX:%.*]] = shl nsw i64 [[IDX:%.*]], 2
+; CHECK-NEXT:    [[I1:%.*]] = add i64 [[P1_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[BASE]] to i64
+; CHECK-NEXT:    [[P2_IDX:%.*]] = shl nsw i64 [[IDX2:%.*]], 2
+; CHECK-NEXT:    [[I2:%.*]] = add i64 [[P2_IDX]], [[TMP2]]
+; CHECK-NEXT:    [[D:%.*]] = sub nuw i64 [[I2]], [[I1]]
+; CHECK-NEXT:    ret i64 [[D]]
 ;
   %p1 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx
   %p2 = getelementptr inbounds [0 x i32], ptr %base, i64 0, i64 %idx2
@@ -173,7 +205,12 @@ define i64 @test_inbounds_nuw_multi_index(ptr %base, i64 %idx, i64 %idx2) {
 ; rdar://7362831
 define i32 @test23(ptr %P, i64 %A){
 ; CHECK-LABEL: @test23(
-; CHECK-NEXT:    [[G:%.*]] = trunc i64 [[A:%.*]] to i32
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[P:%.*]] to i64
+; CHECK-NEXT:    [[C:%.*]] = add i64 [[TMP1]], [[A:%.*]]
+; CHECK-NEXT:    [[D:%.*]] = trunc i64 [[C]] to i32
+; CHECK-NEXT:    [[E:%.*]] = ptrtoint ptr [[P]] to i64
+; CHECK-NEXT:    [[F:%.*]] = trunc i64 [[E]] to i32
+; CHECK-NEXT:    [[G:%.*]] = sub i32 [[D]], [[F]]
 ; CHECK-NEXT:    ret i32 [[G]]
 ;
   %B = getelementptr inbounds i8, ptr %P, i64 %A
@@ -187,7 +224,12 @@ define i32 @test23(ptr %P, i64 %A){
 
 define i8 @test23_as1(ptr addrspace(1) %P, i16 %A) {
 ; CHECK-LABEL: @test23_as1(
-; CHECK-NEXT:    [[G:%.*]] = trunc i16 [[A:%.*]] to i8
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr addrspace(1) [[P:%.*]] to i16
+; CHECK-NEXT:    [[C:%.*]] = add i16 [[TMP1]], [[A:%.*]]
+; CHECK-NEXT:    [[D:%.*]] = trunc i16 [[C]] to i8
+; CHECK-NEXT:    [[E:%.*]] = ptrtoint ptr addrspace(1) [[P]] to i16
+; CHECK-NEXT:    [[F:%.*]] = trunc i16 [[E]] to i8
+; CHECK-NEXT:    [[G:%.*]] = sub i8 [[D]], [[F]]
 ; CHECK-NEXT:    ret i8 [[G]]
 ;
   %B = getelementptr inbounds i8, ptr addrspace(1) %P, i16 %A
@@ -223,8 +265,11 @@ define i16 @test24_as1(ptr addrspace(1) %P, i16 %A) {
 
 define i64 @test24a(ptr %P, i64 %A){
 ; CHECK-LABEL: @test24a(
-; CHECK-NEXT:    [[DIFF_NEG:%.*]] = sub i64 0, [[A:%.*]]
-; CHECK-NEXT:    ret i64 [[DIFF_NEG]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[P:%.*]] to i64
+; CHECK-NEXT:    [[C:%.*]] = add i64 [[TMP1]], [[A:%.*]]
+; CHECK-NEXT:    [[E:%.*]] = ptrtoint ptr [[P]] to i64
+; CHECK-NEXT:    [[G:%.*]] = sub i64 [[E]], [[C]]
+; CHECK-NEXT:    ret i64 [[G]]
 ;
   %B = getelementptr inbounds i8, ptr %P, i64 %A
   %C = ptrtoint ptr %B to i64
@@ -235,8 +280,11 @@ define i64 @test24a(ptr %P, i64 %A){
 
 define i16 @test24a_as1(ptr addrspace(1) %P, i16 %A) {
 ; CHECK-LABEL: @test24a_as1(
-; CHECK-NEXT:    [[DIFF_NEG:%.*]] = sub i16 0, [[A:%.*]]
-; CHECK-NEXT:    ret i16 [[DIFF_NEG]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr addrspace(1) [[P:%.*]] to i16
+; CHECK-NEXT:    [[C:%.*]] = add i16 [[TMP1]], [[A:%.*]]
+; CHECK-NEXT:    [[E:%.*]] = ptrtoint ptr addrspace(1) [[P]] to i16
+; CHECK-NEXT:    [[G:%.*]] = sub i16 [[E]], [[C]]
+; CHECK-NEXT:    ret i16 [[G]]
 ;
   %B = getelementptr inbounds i8, ptr addrspace(1) %P, i16 %A
   %C = ptrtoint ptr addrspace(1) %B to i16
@@ -261,8 +309,9 @@ define i64 @test24b(ptr %P, i64 %A){
 define i64 @test25(ptr %P, i64 %A){
 ; CHECK-LABEL: @test25(
 ; CHECK-NEXT:    [[B_IDX:%.*]] = shl nsw i64 [[A:%.*]], 1
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = add nsw i64 [[B_IDX]], -84
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[C:%.*]] = add i64 [[B_IDX]], ptrtoint (ptr @Arr to i64)
+; CHECK-NEXT:    [[G:%.*]] = sub i64 [[C]], ptrtoint (ptr getelementptr inbounds (i8, ptr @Arr, i64 84) to i64)
+; CHECK-NEXT:    ret i64 [[G]]
 ;
   %B = getelementptr inbounds [42 x i16], ptr @Arr, i64 0, i64 %A
   %C = ptrtoint ptr %B to i64
@@ -276,8 +325,9 @@ define i16 @test25_as1(ptr addrspace(1) %P, i64 %A) {
 ; CHECK-LABEL: @test25_as1(
 ; CHECK-NEXT:    [[TMP1:%.*]] = trunc i64 [[A:%.*]] to i16
 ; CHECK-NEXT:    [[B_IDX:%.*]] = shl nsw i16 [[TMP1]], 1
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = add nsw i16 [[B_IDX]], -84
-; CHECK-NEXT:    ret i16 [[GEPDIFF]]
+; CHECK-NEXT:    [[C:%.*]] = add i16 [[B_IDX]], ptrtoint (ptr addrspace(1) @Arr_as1 to i16)
+; CHECK-NEXT:    [[G:%.*]] = sub i16 [[C]], ptrtoint (ptr addrspace(1) getelementptr inbounds (i8, ptr addrspace(1) @Arr_as1, i16 84) to i16)
+; CHECK-NEXT:    ret i16 [[G]]
 ;
   %B = getelementptr inbounds [42 x i16], ptr addrspace(1) @Arr_as1, i64 0, i64 %A
   %C = ptrtoint ptr addrspace(1) %B to i16
@@ -287,9 +337,13 @@ define i16 @test25_as1(ptr addrspace(1) %P, i64 %A) {
 
 define i64 @test30(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @test30(
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i64
 ; CHECK-NEXT:    [[GEP1_IDX:%.*]] = shl nsw i64 [[I:%.*]], 2
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub nsw i64 [[GEP1_IDX]], [[J:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[CAST1:%.*]] = add i64 [[GEP1_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST2:%.*]] = add i64 [[TMP2]], [[J:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %gep1 = getelementptr inbounds i32, ptr %foo, i64 %i
   %gep2 = getelementptr inbounds i8, ptr %foo, i64 %j
@@ -301,9 +355,13 @@ define i64 @test30(ptr %foo, i64 %i, i64 %j) {
 
 define i16 @test30_as1(ptr addrspace(1) %foo, i16 %i, i16 %j) {
 ; CHECK-LABEL: @test30_as1(
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr addrspace(1) [[FOO:%.*]] to i16
 ; CHECK-NEXT:    [[GEP1_IDX:%.*]] = shl nsw i16 [[I:%.*]], 2
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub nsw i16 [[GEP1_IDX]], [[J:%.*]]
-; CHECK-NEXT:    ret i16 [[GEPDIFF]]
+; CHECK-NEXT:    [[CAST1:%.*]] = add i16 [[GEP1_IDX]], [[TMP1]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr addrspace(1) [[FOO]] to i16
+; CHECK-NEXT:    [[CAST2:%.*]] = add i16 [[TMP2]], [[J:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i16 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i16 [[SUB]]
 ;
   %gep1 = getelementptr inbounds i32, ptr addrspace(1) %foo, i16 %i
   %gep2 = getelementptr inbounds i8, ptr addrspace(1) %foo, i16 %j
@@ -317,8 +375,12 @@ define i16 @test30_as1(ptr addrspace(1) %foo, i16 %i, i16 %j) {
 
 define i64 @gep_diff_both_inbounds(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @gep_diff_both_inbounds(
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub nsw i64 [[I:%.*]], [[J:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i64
+; CHECK-NEXT:    [[CAST1:%.*]] = add i64 [[TMP1]], [[I:%.*]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST2:%.*]] = add i64 [[TMP2]], [[J:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %gep1 = getelementptr inbounds i8, ptr %foo, i64 %i
   %gep2 = getelementptr inbounds i8, ptr %foo, i64 %j
@@ -332,8 +394,12 @@ define i64 @gep_diff_both_inbounds(ptr %foo, i64 %i, i64 %j) {
 
 define i64 @gep_diff_first_inbounds(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @gep_diff_first_inbounds(
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub i64 [[I:%.*]], [[J:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i64
+; CHECK-NEXT:    [[CAST1:%.*]] = add i64 [[TMP1]], [[I:%.*]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST2:%.*]] = add i64 [[TMP2]], [[J:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %gep1 = getelementptr inbounds i8, ptr %foo, i64 %i
   %gep2 = getelementptr i8, ptr %foo, i64 %j
@@ -347,8 +413,12 @@ define i64 @gep_diff_first_inbounds(ptr %foo, i64 %i, i64 %j) {
 
 define i64 @gep_diff_second_inbounds(ptr %foo, i64 %i, i64 %j) {
 ; CHECK-LABEL: @gep_diff_second_inbounds(
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub i64 [[I:%.*]], [[J:%.*]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i64
+; CHECK-NEXT:    [[CAST1:%.*]] = add i64 [[TMP1]], [[I:%.*]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[FOO]] to i64
+; CHECK-NEXT:    [[CAST2:%.*]] = add i64 [[TMP2]], [[J:%.*]]
+; CHECK-NEXT:    [[SUB:%.*]] = sub i64 [[CAST1]], [[CAST2]]
+; CHECK-NEXT:    ret i64 [[SUB]]
 ;
   %gep1 = getelementptr i8, ptr %foo, i64 %i
   %gep2 = getelementptr inbounds i8, ptr %foo, i64 %j
@@ -360,7 +430,8 @@ define i64 @gep_diff_second_inbounds(ptr %foo, i64 %i, i64 %j) {
 
 define i64 @gep_diff_with_bitcast(ptr %p, i64 %idx) {
 ; CHECK-LABEL: @gep_diff_with_bitcast(
-; CHECK-NEXT:    ret i64 [[IDX:%.*]]
+; CHECK-NEXT:    [[I1_IDX:%.*]] = and i64 [[IDX:%.*]], 576460752303423487
+; CHECK-NEXT:    ret i64 [[I1_IDX]]
 ;
   %i1 = getelementptr inbounds [4 x i64], ptr %p, i64 %idx
   %i3 = ptrtoint ptr %i1 to i64
@@ -390,10 +461,14 @@ define i64 @sub_scalable2(ptr noundef %val1) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[TMP0:%.*]] = call i64 @llvm.vscale.i64()
 ; CHECK-NEXT:    [[TMP1:%.*]] = shl i64 [[TMP0]], 4
-; CHECK-NEXT:    [[TMP2:%.*]] = call i64 @llvm.vscale.i64()
-; CHECK-NEXT:    [[GEP2_IDX:%.*]] = shl i64 [[TMP2]], 5
-; CHECK-NEXT:    [[GEPDIFF:%.*]] = sub i64 [[TMP1]], [[GEP2_IDX]]
-; CHECK-NEXT:    ret i64 [[GEPDIFF]]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VAL1:%.*]] to i64
+; CHECK-NEXT:    [[SUB_PTR_LHS_CAST_I:%.*]] = add i64 [[TMP1]], [[TMP2]]
+; CHECK-NEXT:    [[TMP3:%.*]] = call i64 @llvm.vscale.i64()
+; CHECK-NEXT:    [[GEP2_IDX:%.*]] = shl i64 [[TMP3]], 5
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[VAL1]] to i64
+; CHECK-NEXT:    [[SUB_PTR_RHS_CAST_I:%.*]] = add i64 [[GEP2_IDX]], [[TMP4]]
+; CHECK-NEXT:    [[SUB_PTR_SUB_I:%.*]] = sub i64 [[SUB_PTR_LHS_CAST_I]], [[SUB_PTR_RHS_CAST_I]]
+; CHECK-NEXT:    ret i64 [[SUB_PTR_SUB_I]]
 ;
 entry:
   %gep1 = getelementptr <vscale x 4 x i32>, ptr %val1, i64 1

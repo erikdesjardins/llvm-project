@@ -7,9 +7,9 @@ declare i32 @test58_d(i64 )
 
 define i1 @test59(ptr %foo) {
 ; CHECK-LABEL: @test59(
-; CHECK-NEXT:    [[GEP1:%.*]] = getelementptr inbounds i8, ptr [[FOO:%.*]], i32 8
-; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[GEP1]] to i40
-; CHECK-NEXT:    [[USE:%.*]] = zext i40 [[TMP1]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[FOO:%.*]] to i40
+; CHECK-NEXT:    [[TMP2:%.*]] = add nuw i40 [[TMP1]], 8
+; CHECK-NEXT:    [[USE:%.*]] = zext i40 [[TMP2]] to i64
 ; CHECK-NEXT:    [[CALL:%.*]] = call i32 @test58_d(i64 [[USE]])
 ; CHECK-NEXT:    ret i1 true
 ;
@@ -23,9 +23,9 @@ define i1 @test59(ptr %foo) {
 
 define i1 @test59_as1(ptr addrspace(1) %foo) {
 ; CHECK-LABEL: @test59_as1(
-; CHECK-NEXT:    [[GEP1:%.*]] = getelementptr inbounds i8, ptr addrspace(1) [[FOO:%.*]], i16 8
-; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr addrspace(1) [[GEP1]] to i16
-; CHECK-NEXT:    [[USE:%.*]] = zext i16 [[TMP1]] to i64
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr addrspace(1) [[FOO:%.*]] to i16
+; CHECK-NEXT:    [[TMP2:%.*]] = add nuw i16 [[TMP1]], 8
+; CHECK-NEXT:    [[USE:%.*]] = zext i16 [[TMP2]] to i64
 ; CHECK-NEXT:    [[CALL:%.*]] = call i32 @test58_d(i64 [[USE]])
 ; CHECK-NEXT:    ret i1 true
 ;

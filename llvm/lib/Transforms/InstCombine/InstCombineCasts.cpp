@@ -2049,26 +2049,14 @@ Instruction *InstCombinerImpl::visitPtrToInt(PtrToIntInst &CI) {
       Mask->getType() == Ty)
     return BinaryOperator::CreateAnd(Builder.CreatePtrToInt(Ptr, Ty), Mask);
 
+  // ptrtoint (gep Base, Offset) -> add (ptrtoint Base), Offset
+  // Push ptrtoint through GEP when the GEP has one use.
   if (auto *GEP = dyn_cast<GEPOperator>(SrcOp)) {
-    // Fold ptrtoint(gep null, x) to multiply + constant if the GEP has one use.
-    // While this can increase the number of instructions it doesn't actually
-    // increase the overall complexity since the arithmetic is just part of
-    // the GEP otherwise.
-    if (GEP->hasOneUse() &&
-        isa<ConstantPointerNull>(GEP->getPointerOperand())) {
-      return replaceInstUsesWith(CI,
-                                 Builder.CreateIntCast(EmitGEPOffset(GEP), Ty,
-                                                       /*isSigned=*/false));
-    }
-
-    // (ptrtoint (gep (inttoptr Base), ...)) -> Base + Offset
-    Value *Base;
-    if (GEP->hasOneUse() &&
-        match(GEP->getPointerOperand(), m_OneUse(m_IntToPtr(m_Value(Base)))) &&
-        Base->getType() == Ty) {
-      Value *Offset = EmitGEPOffset(GEP);
+    if (GEP->hasOneUse() && Ty->isIntegerTy()) {
+      Value *Base = Builder.CreatePtrToInt(GEP->getPointerOperand(), Ty);
+      Value *Offset = Builder.CreateIntCast(EmitGEPOffset(GEP), Ty, /*isSigned=*/false);
       auto *NewOp = BinaryOperator::CreateAdd(Base, Offset);
-      if (GEP->isInBounds() && isKnownNonNegative(Offset, SQ))
+      if (GEP->hasNoUnsignedWrap() || (GEP->hasNoUnsignedSignedWrap() && isKnownNonNegative(Offset, SQ)))
         NewOp->setHasNoUnsignedWrap(true);
       return NewOp;
     }

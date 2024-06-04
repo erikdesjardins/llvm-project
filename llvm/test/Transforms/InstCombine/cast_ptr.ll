@@ -370,8 +370,7 @@ define i32 @ptr_add_in_int_extra_use1(i32 %x) {
 ; CHECK-LABEL: @ptr_add_in_int_extra_use1(
 ; CHECK-NEXT:    [[PTR:%.*]] = inttoptr i32 [[X:%.*]] to ptr
 ; CHECK-NEXT:    call void @use_ptr(ptr [[PTR]])
-; CHECK-NEXT:    [[P2:%.*]] = getelementptr inbounds i8, ptr [[PTR]], i32 4096
-; CHECK-NEXT:    [[R:%.*]] = ptrtoint ptr [[P2]] to i32
+; CHECK-NEXT:    [[R:%.*]] = add nuw i32 [[X]], 4096
 ; CHECK-NEXT:    ret i32 [[R]]
 ;
   %ptr = inttoptr i32 %x to ptr
